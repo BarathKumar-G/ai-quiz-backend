@@ -5,6 +5,7 @@ from rest_framework import status
 from .models import Quiz,Question
 from .serializers import QuizSerializer
 from .services.ai_service import generate_questions
+from .serializers import QuizDetailSerializer
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -39,3 +40,14 @@ def create_quiz(request):
         )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_quiz(request, quiz_id):
+    try:
+        quiz = Quiz.objects.get(id=quiz_id, created_by=request.user)
+    except Quiz.DoesNotExist:
+        return Response({"error": "Quiz not found"}, status=404)
+
+    serializer = QuizDetailSerializer(quiz)
+    return Response(serializer.data)

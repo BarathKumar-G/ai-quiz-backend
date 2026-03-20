@@ -1,19 +1,44 @@
 import requests
+import os
+
+HF_API_KEY = os.getenv("HF_API_KEY")
+
+API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
+
+headers = {
+    "Authorization": f"Bearer {HF_API_KEY}"
+}
+
 
 def generate_questions(topic, difficulty, num_questions):
-    
-    questions = []
+    prompt = f"""
+    Generate {num_questions} multiple choice questions on topic '{topic}' with difficulty '{difficulty}'.
+    Each question should have:
+    - question text
+    - 4 options (A, B, C, D)
+    - correct answer
 
-    for i in range(num_questions):
-        questions.append({
-            "text": f"{topic} question {i+1} ({difficulty})",
-            "options": {
-                "A": "Option A",
-                "B": "Option B",
-                "C": "Option C",
-                "D": "Option D"
-            },
-            "correct_answer": "A"
-        })
+    Return in JSON format like:
+    [
+      {{
+        "text": "question",
+        "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+        "correct_answer": "A"
+      }}
+    ]
+    """
 
-    return questions
+    response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+
+    result = response.json()
+
+    try:
+        output_text = result[0]["generated_text"]
+
+        import json
+        questions = json.loads(output_text)
+
+        return questions
+
+    except Exception:
+        return []
