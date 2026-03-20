@@ -15,14 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.urls import path
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-
-@api_view(['GET'])
-def test_api(request):
-    return Response({"message": "API working"})
+from django.urls import path, include
 
 urlpatterns = [
-    path('test/', test_api),
+    path("api/users/", include("apps.users.urls")),
 ]
