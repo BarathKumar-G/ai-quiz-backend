@@ -9,6 +9,23 @@ headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
 }
 
+import re
+
+def extract_json(text):
+    try:
+        # Find JSON array inside messy text
+        match = re.search(r"\[.*\]", text, re.DOTALL)
+        if not match:
+            return None
+
+        json_str = match.group(0)
+
+        import json
+        return json.loads(json_str)
+
+    except Exception as e:
+        print("JSON extraction failed:", e)
+        return None
 
 def generate_questions(topic, difficulty, num_questions):
     prompt = f"""
@@ -35,8 +52,10 @@ def generate_questions(topic, difficulty, num_questions):
     try:
         output_text = result[0]["generated_text"]
 
-        import json
-        questions = json.loads(output_text)
+        questions = extract_json(output_text)
+
+        if not questions:
+            raise ValueError("No valid JSON extracted")
 
         return questions
 
