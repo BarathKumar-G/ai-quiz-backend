@@ -3,61 +3,61 @@ import os
 
 HF_API_KEY = os.getenv("HF_API_KEY")
 
-API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
-
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
 headers = {
     "Authorization": f"Bearer {HF_API_KEY}"
 }
 
 import re
-
+import json
 def extract_json(text):
-    try:
-        # Find JSON array inside messy text
-        match = re.search(r"\[.*\]", text, re.DOTALL)
-        if not match:
-            return None
+    match = re.search(r"\[.*\]", text, re.DOTALL)
+    if match:
+        return json.loads(match.group(0))
+    return []
 
-        json_str = match.group(0)
 
-        import json
-        return json.loads(json_str)
-
-    except Exception as e:
-        print("JSON extraction failed:", e)
-        return None
 
 def generate_questions(topic, difficulty, num_questions):
+    
     prompt = f"""
-    Generate {num_questions} multiple choice questions on topic '{topic}' with difficulty '{difficulty}'.
-    Each question should have:
-    - question text
-    - 4 options (A, B, C, D)
-    - correct answer
+    You are an API that returns ONLY valid JSON.
 
-    Return in JSON format like:
+    Generate {num_questions} multiple choice questions on topic "{topic}" with difficulty "{difficulty}".
+
+    STRICT RULES:
+    - Output MUST be valid JSON
+    - Do NOT include explanation
+    - Do NOT include text before/after JSON
+
+    FORMAT:
     [
-      {{
+    {{
         "text": "question",
-        "options": {{"A": "...", "B": "...", "C": "...", "D": "..."}},
+        "options": {{
+        "A": "option",
+        "B": "option",
+        "C": "option",
+        "D": "option"
+        }},
         "correct_answer": "A"
-      }}
+    }}
     ]
     """
-
-    response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
-
-    result = response.json()
-
     try:
+        response = requests.post(
+            API_URL,
+            headers=headers,
+            json={"inputs": prompt}
+        )
+
+        result = response.json()
         output_text = result[0]["generated_text"]
 
         questions = extract_json(output_text)
 
-        if not questions:
-            raise ValueError("No valid JSON extracted")
+        return questions if questions else []
 
-        return questions
-
-    except Exception:
+    except Exception as e:
+        print("AI error:", e)
         return []
